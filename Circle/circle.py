@@ -33,4 +33,3 @@ class Circle:
     @property
     def area(self):
         return pi * (self._radius ** 2)
-

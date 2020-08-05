@@ -1,20 +1,23 @@
 from dataclasses import dataclass
 from functools import partial, wraps
-from typing import Any, Dict, List
+from typing import Any, Optional
 
-NO_RETURN = object()
+NO_RETURN = object()  # Sentinel object
 
 println = partial(print, end="\n" * 2)
 
 
+# `BaseException`: The base class for all Python built-in exceptions.
 @dataclass(frozen=True)  # Immutable
 class Call:
-    args: List
-    kwargs: Dict
-    return_value: Any
-    exception: Any
+    args: tuple
+    kwargs: dict
+    return_value: Any = NO_RETURN
+    exception: Optional[BaseException] = None  # or `Any`
 
 
+# Decorator: A callable that accepts a callable and returns a callable.
+# Decorators can also be implemented as classes.
 def record_calls(func):
     @wraps(func)
     def wrapper_record_calls(*args, **kwargs):
@@ -22,13 +25,14 @@ def record_calls(func):
 
         try:
             value = func(*args, **kwargs)
-            wrapper_record_calls.calls.append(Call(args, kwargs, value, None))
-            return value
-        except Exception as e:
-            wrapper_record_calls.calls.append(Call(args, kwargs, NO_RETURN, e))
-            raise e
+            wrapper_record_calls.calls.append(Call(args, kwargs, return_value=value))
+        except BaseException as e:
+            wrapper_record_calls.calls.append(Call(args, kwargs, exception=e))
+            raise  # No need to use `raise e`
+        return value
 
-    # More info: https://www.youtube.com/watch?v=9oyr0mocZTg
+    # More info: https://www.youtube.com/watch?v=9oyr0mocZTg.
+    # Functions can have attributes.
     wrapper_record_calls.call_count = 0
     wrapper_record_calls.calls = []
 
